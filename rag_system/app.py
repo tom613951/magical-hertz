@@ -94,9 +94,8 @@ with st.sidebar:
         base_url_val = Config.OLLAMA_HOST if provider == "ollama" else base_url_default
         base_url = st.text_input("API 代理地址 / Host 地址", value=base_url_val)
         
-    # 模型选择
-    default_model = Config.get_default_model(provider)
-    model_name = st.text_input("模型名称 (Model)", value=default_model)
+    # 参数调节 (模型名称使用系统各渠道的默认值)
+    model_name = None
     temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=0.0, step=0.1) # 0.0 最适合事实问答
     
     st.markdown("---")

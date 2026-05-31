@@ -109,9 +109,8 @@ with st.sidebar:
             help=base_url_help
         )
         
-    # 模型名称与参数调节
-    default_model = Config.get_default_model(provider)
-    model_name = st.text_input("模型名称 (Model)", value=default_model)
+    # 参数调节 (模型名称使用系统各渠道的默认值)
+    model_name = None
     temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=Config.DEFAULT_TEMPERATURE, step=0.1)
     max_iter = st.slider("最大质检修改循环数", min_value=1, max_value=5, value=3)
 
