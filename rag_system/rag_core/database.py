@@ -19,9 +19,6 @@ def get_embeddings(provider: str, api_key: str = None):
             model="text-embedding-3-small"
         )
     elif provider == "deepseek":
-        # DeepSeek doesn't offer embedding models on their standard API, 
-        # so we fall back to OpenAI embeddings or local HuggingFace.
-        # Let's fallback to OpenAI if API key is present, otherwise Google.
         from langchain_openai import OpenAIEmbeddings
         key = api_key or Config.OPENAI_API_KEY or Config.DEEPSEEK_API_KEY
         return OpenAIEmbeddings(
@@ -36,7 +33,6 @@ def get_embeddings(provider: str, api_key: str = None):
             model="models/embedding-001"
         )
     elif provider == "anthropic":
-        # Anthropic doesn't have an embeddings API, fallback to OpenAI
         from langchain_openai import OpenAIEmbeddings
         return OpenAIEmbeddings(
             api_key=api_key or Config.OPENAI_API_KEY,
@@ -92,7 +88,7 @@ class RAGDatabase:
         if os.path.exists(DB_DIR):
             try:
                 shutil.rmtree(DB_DIR)
-                return "Successfully cleared local Vector Database."
+                return "已成功清空本地向量数据库。"
             except Exception as e:
-                return f"Error clearing Database: {str(e)}"
-        return "Database is already empty."
+                return f"清空本地数据库出错: {str(e)}"
+        return "数据库已经是空的。"

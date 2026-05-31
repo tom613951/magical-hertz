@@ -1,11 +1,18 @@
-import streamlit as st
+import sys
 import os
+
+# Ensure the workspace root is in sys.path so we can import 'core.config' and 'core.llm'
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
+
+import streamlit as st
 import io
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Config
 from core.llm import get_llm
-from core.database import RAGDatabase
-from core.retrieval import AdvancedRetriever
+from rag_core.database import RAGDatabase
+from rag_core.retrieval import AdvancedRetriever
 from utils.parser import parse_file, chunk_text
 
 # 设置页面配置
@@ -227,7 +234,7 @@ Context:
                             
                     with tab_queries:
                         st.markdown("### 大模型为了提高召回率自动生成的联想检索词：")
-                        from core.retrieval import expand_query
+                        from rag_core.retrieval import expand_query
                         expanded_queries = expand_query(query_input, llm)
                         for q in expanded_queries:
                             st.markdown(f"- *\"{q}\"*")

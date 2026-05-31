@@ -87,7 +87,6 @@ class AdvancedRetriever:
             for doc, meta in zip(documents, metadatas):
                 langchain_doc = Document(page_content=doc, metadata=meta or {})
                 self.bm25_docs.append(langchain_doc)
-                # Simple tokenization by splitting and lowercasing
                 tokenized_corpus.append(doc.lower().split())
                 
             if tokenized_corpus:
@@ -106,13 +105,12 @@ class AdvancedRetriever:
         # Expand query
         queries = expand_query(query, self.llm) if run_expansion else [query]
         
-        candidates = {} # Map page_content hash to (Document, source_type_score)
+        candidates = {}
         
         # 1. Vector Search Candidates
         vector_store = self.db_manager.db
         if vector_store:
             for q in queries:
-                # Retrieve top 5 from vector search for each query variation
                 res = vector_store.similarity_search_with_relevance_scores(q, k=5)
                 for doc, score in res:
                     content = doc.page_content
@@ -127,16 +125,13 @@ class AdvancedRetriever:
                         candidates[content]["vector_score"] = max(candidates[content]["vector_score"], float(score))
 
         # 2. BM25 Search Candidates
-        # If BM25 is not built yet (or db changed), rebuild it
         if self.bm25 is None and vector_store:
             self.rebuild_bm25()
             
         if self.bm25:
             for q in queries:
                 tokenized_query = q.lower().split()
-                # Get BM25 raw scores
                 scores = self.bm25.get_scores(tokenized_query)
-                # Select top 5 BM25 index indices
                 top_indices = sorted(range(len(scores)), key=lambda idx: scores[idx], reverse=True)[:5]
                 
                 for idx in top_indices:
@@ -164,7 +159,6 @@ class AdvancedRetriever:
         try:
             ranker = get_flashrank_ranker()
             
-            # Translate candidates to flashrank format
             flash_passages = []
             for i, c in enumerate(candidate_list):
                 flash_passages.append({
@@ -176,7 +170,6 @@ class AdvancedRetriever:
             rerank_request = RerankRequest(query=query, passages=flash_passages)
             results = ranker.rerank(rerank_request)
             
-            # Format results in descending order of score
             final_docs = []
             for r in results[:top_k]:
                 idx = r["id"]
@@ -193,15 +186,13 @@ class AdvancedRetriever:
             return final_docs
             
         except Exception as e:
-            # Fallback to combining score sorting if reranking fails
-            # Sort by max score
             candidate_list.sort(key=lambda x: max(x["vector_score"], x["bm25_score"] / 20.0), reverse=True)
             
             final_docs = []
             for c in candidate_list[:top_k]:
                 final_docs.append({
                     "document": c["doc"],
-                    "rerank_score": 0.0, # Not computed
+                    "rerank_score": 0.0,
                     "vector_score": c["vector_score"],
                     "bm25_score": c["bm25_score"],
                     "source": c["source"]
