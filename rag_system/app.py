@@ -94,8 +94,13 @@ with st.sidebar:
         base_url_val = Config.OLLAMA_HOST if provider == "ollama" else base_url_default
         base_url = st.text_input("API 代理地址 / Host 地址", value=base_url_val)
         
-    # 参数调节 (模型名称使用系统各渠道的默认值)
-    model_name = None
+    # 模型名称与参数调节
+    model_name = st.text_input(
+        "模型名称 (Model)", 
+        value="", 
+        placeholder="例如: gpt-4o, claude-3-5-sonnet, deepseek-reasoner",
+        help="请在此输入你想使用的大模型名称"
+    )
     temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=0.0, step=0.1) # 0.0 最适合事实问答
     
     st.markdown("---")
@@ -153,6 +158,8 @@ query_input = st.text_input("请输入您的问题：")
 if st.button("检索知识库", use_container_width=True):
     if not query_input.strip():
         st.warning("请先输入您的问题！")
+    elif not model_name.strip():
+        st.error("请输入模型名称 (Model)！")
     elif provider != "ollama" and not api_key:
         st.error("开始提问前，请在左侧边栏配置您的 API 密钥。")
     else:

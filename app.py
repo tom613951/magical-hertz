@@ -109,8 +109,13 @@ with st.sidebar:
             help=base_url_help
         )
         
-    # 参数调节 (模型名称使用系统各渠道的默认值)
-    model_name = None
+    # 模型名称与参数调节
+    model_name = st.text_input(
+        "模型名称 (Model)", 
+        value="", 
+        placeholder="例如: gpt-4o, claude-3-5-sonnet, deepseek-reasoner",
+        help="请在此输入你想使用的大模型名称"
+    )
     temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=Config.DEFAULT_TEMPERATURE, step=0.1)
     max_iter = st.slider("最大质检修改循环数", min_value=1, max_value=5, value=3)
 
@@ -133,6 +138,8 @@ else:
 if st.button("启动智能体协同工作", type="primary", use_container_width=True):
     if not task_input.strip():
         st.warning("请先指定地理空间任务！")
+    elif not model_name.strip():
+        st.error("请输入模型名称 (Model)！")
     elif provider != "ollama" and not api_key:
         st.error(f"大模型服务商 '{provider}' 需要 API 密钥。请在左侧边栏中填写。")
     else:
