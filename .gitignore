@@ -1,0 +1,17 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# System specific caches
+rag_system/chroma_db/
+rag_system/flashrank_cache/
+*.log
+
+# Vercel
+.vercel/
+dist/
+build/
