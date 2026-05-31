@@ -5,18 +5,18 @@ from core.state import AgentState, AgentLog
 from core.config import Config
 from agents.graph import create_gis_graph
 
-# Setup page layout
+# 设置页面布局
 st.set_page_config(
-    page_title="GeoGraph - GIS Multi-Agent Collaboration System",
+    page_title="GeoGraph - GIS多智能体协同系统",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS that adapts to both Light and Dark themes
+# 自定义 CSS 样式（自动适配系统深色/浅色模式）
 st.markdown("""
 <style>
-    /* Styling for agent timeline cards */
+    /* 智能体卡片时间轴样式 */
     .agent-card {
         border-radius: 12px;
         padding: 18px;
@@ -54,28 +54,28 @@ st.markdown("""
         margin-top: 10px;
         line-height: 1.6;
     }
-    /* Hide top Streamlit elements for premium feel */
+    /* 隐藏 Streamlit 默认页眉/页脚以获得高端体验 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# Main Application Title
+# 主应用标题
 st.title("🌍 GeoGraph")
-st.caption("A LangGraph-powered Multi-Agent team specializing in Geospatial Analysis & Python GIS automation")
+st.caption("基于 LangGraph 构建的地理空间分析与 Python GIS 自动化多智能体协同系统")
 
-# Sidebar - Settings Panel
+# 侧边栏 - 配置面板
 with st.sidebar:
-    st.header("⚙️ System Configuration")
+    st.header("⚙️ 系统配置")
     
-    # LLM Provider Selection
+    # 选择 LLM 服务商
     provider = st.selectbox(
-        "LLM Provider",
+        "大模型服务商 (LLM)",
         options=["openai", "deepseek", "gemini", "anthropic", "ollama"],
         index=["openai", "deepseek", "gemini", "anthropic", "ollama"].index(Config.DEFAULT_PROVIDER)
     )
     
-    # Dynamic settings based on selected provider
+    # 动态载入默认密钥
     api_key_default = ""
     base_url_default = ""
     
@@ -93,66 +93,63 @@ with st.sidebar:
     api_key = ""
     if provider != "ollama":
         api_key = st.text_input(
-            f"{provider.capitalize()} API Key",
+            f"{provider.capitalize()} API 密钥",
             value=api_key_default,
             type="password",
-            help="If configured in .env, it loads automatically."
+            help="如果在 .env 文件中配置了密钥，系统会自动加载。"
         )
         
     base_url = ""
     if provider in ["openai", "deepseek", "ollama"]:
-        base_url_help = "Ollama Host URL" if provider == "ollama" else "API Base Endpoint URL"
+        base_url_help = "Ollama 服务的 Host 地址" if provider == "ollama" else "API 代理或基础请求地址"
         base_url_val = Config.OLLAMA_HOST if provider == "ollama" else base_url_default
         base_url = st.text_input(
-            "API Base / Host URL",
+            "API 代理地址 / Host 地址",
             value=base_url_val,
             help=base_url_help
         )
         
-    # Model Selection
+    # 模型名称与参数调节
     default_model = Config.get_default_model(provider)
-    model_name = st.text_input("Model Name", value=default_model)
-    
-    # Temperature and Iteration sliders
-    temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=Config.DEFAULT_TEMPERATURE, step=0.1)
-    max_iter = st.slider("Max Revision Loops", min_value=1, max_value=5, value=3)
+    model_name = st.text_input("模型名称 (Model)", value=default_model)
+    temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=Config.DEFAULT_TEMPERATURE, step=0.1)
+    max_iter = st.slider("最大质检修改循环数", min_value=1, max_value=5, value=3)
 
-# Sample tasks for quick input
+# 示例任务模版
 sample_tasks = [
-    "Load point data, project it to metric CRS, buffer by 500m, perform spatial join with polygon data, and plot on a Folium map.",
-    "Calculate the shortest path between two points on a road network using NetworkX and geopandas, and export the route as GeoJSON.",
-    "Read a raster elevation model (DEM) using rasterio, compute slope, slice slopes greater than 15 degrees, and plot the result static map."
+    "加载点数据，将其投影到投影坐标系（米），做500米缓冲区分析，与面数据进行空间连接，最后用 Folium 地图进行可视化展示。",
+    "使用 NetworkX 和 GeoPandas 计算道路网络上两点之间的最短路径，并将路线导出为 GeoJSON 格式。",
+    "使用 Rasterio 读取数字高程模型（DEM）栅格数据，计算坡度，筛选出坡度大于15度的区域，并绘制静态地图展示结果。"
 ]
 
-st.subheader("🚀 Define Geospatial Task")
-task_selection = st.selectbox("Choose a sample task template:", ["Custom Task"] + sample_tasks)
+st.subheader("🚀 定义地理空间任务")
+task_selection = st.selectbox("选择一个示例任务模版:", ["自定义任务"] + sample_tasks)
 
-if task_selection == "Custom Task":
-    task_input = st.text_area("Or type your custom GIS requirement here:", value="", height=120)
+if task_selection == "自定义任务":
+    task_input = st.text_area("或者在此输入您的自定义 GIS 需求:", value="", height=120)
 else:
-    task_input = st.text_area("Your GIS requirement:", value=task_selection, height=120)
+    task_input = st.text_area("您的 GIS 需求:", value=task_selection, height=120)
 
-# Build run workflow section
-if st.button("Start Agent Collaboration", type="primary", use_container_width=True):
+# 启动智能体协同工作按钮
+if st.button("启动智能体协同工作", type="primary", use_container_width=True):
     if not task_input.strip():
-        st.warning("Please specify a geospatial task first!")
+        st.warning("请先指定地理空间任务！")
     elif provider != "ollama" and not api_key:
-        st.error(f"API key is required for provider '{provider}'. Please fill it in the sidebar.")
+        st.error(f"大模型服务商 '{provider}' 需要 API 密钥。请在左侧边栏中填写。")
     else:
-        st.info("Compiling StateGraph and starting collaboration...")
+        st.info("正在编译状态图并启动多智能体协作...")
         
-        # 1. Initialize empty containers for visual progress
+        # 初始化界面提示与 Tabs 容器
         status_container = st.empty()
         
-        # We will use Tabs to organize the logs, final code, etc.
         tab_timeline, tab_code, tab_plan, tab_qa = st.tabs([
-            "💬 Team Chat & Timeline", 
-            "💻 Generated GIS Script", 
-            "📋 Spatial Design Plan", 
-            "🔍 QA Audit Reports"
+            "💬 团队对话与时间轴", 
+            "💻 生成的 GIS 脚本", 
+            "📋 空间分析设计方案", 
+            "🔍 QA 质检报告"
         ])
         
-        # Prepare LangGraph compilation
+        # 编译 LangGraph
         graph = create_gis_graph()
         
         initial_state = AgentState(
@@ -167,7 +164,7 @@ if st.button("Start Agent Collaboration", type="primary", use_container_width=Tr
             logs=[]
         )
         
-        # Prepare runtime config overrides
+        # 配置运行时参数
         graph_config = {
             "configurable": {
                 "provider": provider,
@@ -178,43 +175,50 @@ if st.button("Start Agent Collaboration", type="primary", use_container_width=Tr
             }
         }
         
-        # Run workflow in a spinner block
-        with st.spinner("GeoGraph team is working..."):
+        # 执行工作流并渲染进度
+        with st.spinner("GeoGraph 专家团队正在协同工作中..."):
             try:
-                # Invoke the LangGraph execution
+                # 执行 LangGraph 编译的图
                 final_state = graph.invoke(initial_state, config=graph_config)
                 
-                # Report Status
+                # 工作流状态反馈
                 if final_state.get("qa_approved", False):
-                    status_container.success("🎉 GeoGraph Completed! GIS script generated and approved by QA Inspector.")
+                    status_container.success("🎉 GeoGraph 协作完成！GIS 脚本已生成并通过 QA 质检工程师审核。")
                 else:
-                    status_container.warning(f"⚠️ GeoGraph completed but without QA Approval or reached revision limit ({final_state.get('iterations', 0)} loops).")
+                    status_container.warning(f"⚠️ GeoGraph 执行结束，但未获得 QA 审核通过或已达到修改次数上限（已循环迭代 {final_state.get('iterations', 0)} 次）。")
                 
-                # Render Timeline Logs
+                # 渲染对话与时间轴
                 with tab_timeline:
-                    st.write("### Collaboration Execution Log")
+                    st.write("### 协作执行日志")
                     for log in final_state.get("logs", []):
                         agent = log.get("agent")
                         log_type = log.get("log_type", "info")
                         content = log.get("content", "")
                         time_str = log.get("timestamp", "")
                         
-                        # Set badge class based on agent type
+                        # 根据角色指定 badge 颜色
                         badge_class = "badge-system"
-                        if "Planner" in agent:
+                        if "Planner" in agent or "规划" in agent:
                             badge_class = "badge-planner"
-                        elif "Developer" in agent:
+                        elif "Developer" in agent or "开发" in agent:
                             badge_class = "badge-developer"
-                        elif "QA" in agent:
+                        elif "QA" in agent or "质检" in agent:
                             badge_class = "badge-qa"
                         elif log_type == "error":
                             badge_class = "badge-error"
+                            
+                        # 对英文角色进行中文显示映射优化
+                        agent_zh = agent
+                        if agent == "GIS Planner": agent_zh = "GIS 规划师"
+                        elif agent == "GIS Developer": agent_zh = "GIS 开发工程师"
+                        elif agent == "GIS QA Inspector": agent_zh = "GIS QA 质检员"
+                        elif agent == "GeoGraph System": agent_zh = "系统核心"
                             
                         st.markdown(f"""
                         <div class="agent-card">
                             <div class="agent-header">
                                 <span>
-                                    <span class="agent-badge {badge_class}">{agent}</span>
+                                    <span class="agent-badge {badge_class}">{agent_zh}</span>
                                     &nbsp;({log_type.upper()})
                                 </span>
                                 <span class="log-time">🕒 {time_str}</span>
@@ -225,36 +229,36 @@ if st.button("Start Agent Collaboration", type="primary", use_container_width=Tr
                         </div>
                         """, unsafe_allow_html=True)
                 
-                # Render Generated Code Tab
+                # 渲染生成的代码
                 with tab_code:
                     code = final_state.get("draft_code", "")
                     explanation = final_state.get("explanation", "")
                     
                     if code:
-                        st.write("### Final GIS Automation Script (`gis_analysis.py`)")
+                        st.write("### 最终 GIS 自动化脚本 (`gis_analysis.py`)")
                         st.code(code, language="python")
                         st.download_button(
-                            label="📥 Download Python GIS Script",
+                            label="📥 下载 Python GIS 脚本",
                             data=code,
                             file_name="gis_analysis.py",
                             mime="text/x-python"
                         )
-                        st.write("### Developer Explanation")
+                        st.write("### 开发工程师说明")
                         st.write(explanation)
                     else:
-                        st.info("No code has been successfully generated yet.")
+                        st.info("尚未成功生成任何代码。")
                 
-                # Render Spatial Design Plan Tab
+                # 渲染设计方案
                 with tab_plan:
-                    st.write("### GIS Spatial Methodology Plan")
-                    st.markdown(final_state.get("plan", "No plan created."))
+                    st.write("### GIS 空间分析方案设计")
+                    st.markdown(final_state.get("plan", "未创建任何方案。"))
                 
-                # Render QA Audit Reports
+                # 渲染质检报告
                 with tab_qa:
-                    st.write("### GIS QA Auditing History & Revision Loop Details")
-                    st.write(f"**Total revision iterations**: {final_state.get('iterations', 0)}")
-                    st.markdown(final_state.get("qa_feedback", "No QA audits have run."))
+                    st.write("### GIS QA 审核历史与循环修改详情")
+                    st.write(f"**总修改迭代次数**: {final_state.get('iterations', 0)}")
+                    st.markdown(final_state.get("qa_feedback", "未运行任何 QA 质检。"))
                     
             except Exception as e:
-                status_container.error(f"Failed to execute GeoGraph workflow: {str(e)}")
+                status_container.error(f"多智能体工作流执行失败: {str(e)}")
                 st.exception(e)

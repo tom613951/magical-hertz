@@ -8,14 +8,14 @@ from core.database import RAGDatabase
 from core.retrieval import AdvancedRetriever
 from utils.parser import parse_file, chunk_text
 
-# Configure page settings
+# 设置页面配置
 st.set_page_config(
-    page_title="GeoGraph RAG - Advanced Document QA",
+    page_title="GeoGraph RAG - 高级智能文档问答",
     page_icon="📚",
     layout="wide"
 )
 
-# Custom CSS for adaptive light/dark mode UI elements
+# 自定义 CSS 样式（自适应深色/浅色模式）
 st.markdown("""
 <style>
     .chunk-card {
@@ -43,22 +43,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Main Title
-st.title("📚 GeoGraph - Advanced RAG")
-st.caption("Hybrid Keyword + Vector Search with Query Expansion & Flashrank Reranking (Self-Adaptive Theme)")
+# 主页标题
+st.title("📚 GeoGraph - 高级 RAG 知识库")
+st.caption("融合大模型查询扩展、向量数据库与 BM25 混合检索，以及 Flashrank 本地模型重排的智能文档问答系统（自适应深浅色主题）")
 
-# Sidebar Settings
+# 侧边栏配置面板
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ 系统配置")
     
-    # Provider Selection
+    # 大模型服务商选择
     provider = st.selectbox(
-        "LLM Provider",
+        "大模型服务商 (LLM)",
         options=["openai", "deepseek", "gemini", "anthropic", "ollama"],
         index=["openai", "deepseek", "gemini", "anthropic", "ollama"].index(Config.DEFAULT_PROVIDER)
     )
     
-    # Dynamic Key fields
+    # 动态载入默认 API 密钥和代理地址
     api_key_default = ""
     base_url_default = ""
     
@@ -76,86 +76,86 @@ with st.sidebar:
     api_key = ""
     if provider != "ollama":
         api_key = st.text_input(
-            f"{provider.capitalize()} API Key",
+            f"{provider.capitalize()} API 密钥",
             value=api_key_default,
-            type="password"
+            type="password",
+            help="如果在 .env 文件中配置了密钥，系统会自动加载。"
         )
         
     base_url = ""
     if provider in ["openai", "deepseek", "ollama"]:
         base_url_val = Config.OLLAMA_HOST if provider == "ollama" else base_url_default
-        base_url = st.text_input("API Base / Host URL", value=base_url_val)
+        base_url = st.text_input("API 代理地址 / Host 地址", value=base_url_val)
         
-    # Model Selection
+    # 模型选择
     default_model = Config.get_default_model(provider)
-    model_name = st.text_input("Model Name", value=default_model)
-    temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=0.0, step=0.1) # 0.0 is best for QA factual accuracy
+    model_name = st.text_input("模型名称 (Model)", value=default_model)
+    temperature = st.slider("温度 (Temperature)", min_value=0.0, max_value=1.0, value=0.0, step=0.1) # 0.0 最适合事实问答
     
     st.markdown("---")
-    st.header("🧹 Database Utilities")
+    st.header("🧹 向量数据库工具")
     
-    # Database Clear Button
-    if st.button("Clear Vector database", type="secondary", use_container_width=True):
+    # 清空向量库按钮
+    if st.button("清空本地向量数据库", type="secondary", use_container_width=True):
         res = RAGDatabase.clear_database()
         st.success(res)
         st.rerun()
 
-# Document Uploader Section
-st.subheader("📁 1. Load Documents to Knowledge Base")
+# 文档载入区域
+st.subheader("📁 1. 上传文档至知识库")
 uploaded_files = st.file_uploader(
-    "Upload PDF, Markdown, or TXT Files",
+    "选择要解析的 PDF, Markdown, TXT 或 JSON/GeoJSON 文档：",
     type=["pdf", "md", "txt", "json", "geojson"],
     accept_multiple_files=True
 )
 
 if uploaded_files:
-    if st.button("Build Knowledge Base", type="primary"):
-        # Validate model credentials before starting
+    if st.button("构建/更新知识库", type="primary"):
+        # 开始构建前校验密钥
         if provider != "ollama" and not api_key:
-            st.error("API Key is required to run embeddings!")
+            st.error("运行向量化嵌入（embeddings）需要配置 API 密钥！")
         else:
-            with st.spinner("Processing documents and generating embeddings..."):
+            with st.spinner("正在解析上传的文档并计算生成向量表示..."):
                 try:
                     db = RAGDatabase(provider=provider, api_key=api_key)
                     all_chunks = []
                     
                     for uploaded_file in uploaded_files:
-                        # Streamlit UploadedFile is file-like. Convert to BytesIO or read directly
                         filename = uploaded_file.name
                         file_bytes = io.BytesIO(uploaded_file.read())
                         
-                        # Parse
+                        # 解析文本
                         raw_text = parse_file(file_bytes, filename)
                         
-                        # Chunk
+                        # 文本分块
                         chunks = chunk_text(raw_text, filename)
                         all_chunks.extend(chunks)
                     
                     if all_chunks:
-                        # Write to database
+                        # 存入向量数据库
                         db.add_documents(all_chunks)
-                        st.success(f"Successfully processed {len(uploaded_files)} file(s) and embedded {len(all_chunks)} text chunks into Chroma!")
+                        st.success(f"成功解析 {len(uploaded_files)} 个文档，并将 {len(all_chunks)} 个文本切片导入 Chroma 向量数据库！")
                     else:
-                        st.warning("No text could be extracted from uploaded files.")
+                        st.warning("无法从上传的文档中提取出有效的文本内容。")
                 except Exception as e:
-                    st.error(f"Error building knowledge base: {str(e)}")
+                    st.error(f"构建知识库失败: {str(e)}")
 
-# Q&A Section
-st.subheader("💬 2. Ask the Knowledge Base")
-query_input = st.text_input("Enter your question:")
+# 提问区域
+st.subheader("💬 2. 问答与知识检索")
+query_input = st.text_input("请输入您的问题：")
 
-if st.button("Query Knowledge Base", use_container_width=True):
+if st.button("检索知识库", use_container_width=True):
     if not query_input.strip():
-        st.warning("Please enter a question first!")
+        st.warning("请先输入您的问题！")
     elif provider != "ollama" and not api_key:
-        st.error("API Key is required in sidebar to query.")
+        st.error("开始提问前，请在左侧边栏配置您的 API 密钥。")
     else:
-        with st.spinner("Retrieving facts and generating answer..."):
+        with st.spinner("正在检索匹配知识切片并合成回答中..."):
             try:
-                # 1. Instantiate database & retriever
+                # 1. 初始化数据库与检索服务
                 db = RAGDatabase(provider=provider, api_key=api_key)
                 
-                # Setup LLM
+                # 初始化 LLM
                 llm = get_llm(
                     provider=provider,
                     model_name=model_name,
@@ -166,13 +166,13 @@ if st.button("Query Knowledge Base", use_container_width=True):
                 
                 retriever = AdvancedRetriever(db, llm)
                 
-                # 2. Hybrid Retrieve & Rerank
+                # 2. 混合检索并重排
                 retrieved_results = retriever.retrieve(query_input, top_k=5)
                 
                 if not retrieved_results:
-                    st.warning("No relevant matching documents found in the database. Please upload documents first!")
+                    st.warning("数据库中未检索到相关文档切片。请先上传并构建您的知识库文档！")
                 else:
-                    # 3. Compile context text
+                    # 3. 拼接检索上下文
                     context_blocks = []
                     for idx, res in enumerate(retrieved_results, 1):
                         doc = res["document"]
@@ -181,7 +181,7 @@ if st.button("Query Knowledge Base", use_container_width=True):
                     
                     context_str = "\n\n".join(context_blocks)
                     
-                    # 4. Generate Answer using Context
+                    # 4. 基于大模型生成问答
                     system_prompt = """You are a highly analytical QA assistant. Answer the user's question precisely and truthfully based ONLY on the provided context segments. 
 If the context does not contain the answer, reply: "I cannot find the answer in the provided documents." Do not invent facts.
 
@@ -193,19 +193,19 @@ Context:
                         HumanMessage(content=query_input)
                     ])
                     
-                    # 5. Render results in Tabs
+                    # 5. 分 Tab 页展示结果
                     tab_ans, tab_source, tab_queries = st.tabs([
-                        "✏️ Answer", 
-                        "🔍 Retrieved Chunks (Reranked)", 
-                        "⚙️ Expanded Search Queries"
+                        "✏️ 智能回答", 
+                        "🔍 检索切片展示 (重排)", 
+                        "⚙️ 联想检索词 (查询扩展)"
                     ])
                     
                     with tab_ans:
-                        st.markdown("### Answer")
+                        st.markdown("### 回答内容")
                         st.write(response.content)
                         
                     with tab_source:
-                        st.markdown("### Top Retrieved Context Chunks (Flashrank Reranked)")
+                        st.markdown("### 最相关的召回切片 (由 Flashrank 重排)")
                         for idx, res in enumerate(retrieved_results, 1):
                             doc = res["document"]
                             source = doc.metadata.get("source", "Unknown")
@@ -214,10 +214,10 @@ Context:
                             st.markdown(f"""
                             <div class="chunk-card">
                                 <div>
-                                    <span class="score-badge badge-rerank">Rerank Score: {res['rerank_score']:.3f}</span>
-                                    <span class="score-badge badge-vector">Vector Sim: {res['vector_score']:.3f}</span>
-                                    <span class="score-badge badge-bm25">BM25 Score: {res['bm25_score']:.3f}</span>
-                                    <span class="score-badge badge-source">File: {source} (Chunk {chunk_id})</span>
+                                    <span class="score-badge badge-rerank">重排评分: {res['rerank_score']:.3f}</span>
+                                    <span class="score-badge badge-vector">向量相似度: {res['vector_score']:.3f}</span>
+                                    <span class="score-badge badge-bm25">BM25得分: {res['bm25_score']:.3f}</span>
+                                    <span class="score-badge badge-source">源文档: {source} (切片 {chunk_id})</span>
                                 </div>
                                 <div style="margin-top: 10px; font-size: 0.95em;">
                                     {doc.page_content}
@@ -226,12 +226,12 @@ Context:
                             """, unsafe_allow_html=True)
                             
                     with tab_queries:
-                        st.markdown("### Expanded Queries generated by LLM for retrieval:")
+                        st.markdown("### 大模型为了提高召回率自动生成的联想检索词：")
                         from core.retrieval import expand_query
                         expanded_queries = expand_query(query_input, llm)
                         for q in expanded_queries:
                             st.markdown(f"- *\"{q}\"*")
                             
             except Exception as e:
-                st.error(f"Error querying knowledge base: {str(e)}")
+                st.error(f"问答检索执行失败: {str(e)}")
                 st.exception(e)
