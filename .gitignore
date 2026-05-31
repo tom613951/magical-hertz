@@ -15,3 +15,5 @@ rag_system/flashrank_cache/
 .vercel/
 dist/
 build/
+
+.vercel

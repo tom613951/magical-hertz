@@ -1,0 +1,5 @@
+# Ignore requirements.txt for Vercel builds so Vercel doesn't install 
+# the massive local packages (chromadb, langchain, streamlit) which exceed
+# serverless lambda storage limits. The API landing page (api/index.py) 
+# only uses standard libraries and needs no dependencies.
+requirements.txt
